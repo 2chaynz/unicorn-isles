@@ -91,7 +91,7 @@ interface Props {
 
 export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, favs, selected, visible, scores, focusTheme, flySeq, onPick, onTheme }: Props) {
   const box = useRef<HTMLDivElement>(null)
-  const boat = useRef({ x: 0, y: 0, vx: 0, vy: 0, spn: 0, face: 1, goto: null as [number, number] | null })
+  const boat = useRef({ x: 0, y: 0, vx: 0, vy: 0, spn: 0, face: 1, goto: null as [number, number] | null, follow: false })
   const keys = useRef(new Set<string>())
   // Foam left behind the stern: a few small dots that shrink and fade within a second or so.
   const trail = useRef<{ x: number; y: number; t: number }[]>([])
@@ -369,7 +369,13 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
       while (tail.length && t - tail[0].t > 1400) tail.shift()
       b.spn = Math.min(1, sp / top)
       if (Math.abs(b.vx) > top * 0.04) b.face = b.vx > 0 ? 1 : -1
-      if (ix || iy) L.setView((v) => ({ target: [b.x, b.y, 0], zoom: v.zoom }))
+      // The camera keeps easing after the boat while it glides to a stop, so the next move starts centred.
+      if (ix || iy) b.follow = true
+      else if (sp < top * 0.01) b.follow = false
+      if (b.follow) {
+        const k = Math.min(1, dt * 12)
+        L.setView((v) => ({ target: [v.target[0] + (b.x - v.target[0]) * k, v.target[1] + (b.y - v.target[1]) * k, 0], zoom: v.zoom }))
+      }
       frame++
       if (b.spn > 0.04 && frame % 4 === 0) L.addToSim(L.near(b.x, b.y, 4.4))
       if (frame % 6 === 0) {
@@ -633,8 +639,10 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
         views={VIEW}
         viewState={view}
         controller={(overNode && canDragNodes) || dragging ? NO_PAN : CONTROLLER}
-        onViewStateChange={({ viewState }) => {
+        onViewStateChange={({ viewState, interactionState }) => {
           const v = viewState as ViewState
+          // Dragging or zooming the map yourself stops the camera from chasing the boat.
+          if (interactionState?.isDragging || interactionState?.isZooming || interactionState?.isPanning) boat.current.follow = false
           setView({ target: v.target, zoom: Math.min(7, Math.max(fit().zoom - 0.5, v.zoom)) })
         }}
         layers={[waves, compass, splashes, creatures, ...nodeLayers('static'), ...nodeLayers('live'), selection, wake, boatLayer, hint, themeLabels, countryLabels]}
