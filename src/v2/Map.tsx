@@ -18,6 +18,18 @@ const VIEW = new OrthographicView({ flipY: true })
 const CONTROLLER = { inertia: 250 }
 // Over a node, a drag moves the node instead of the map.
 const NO_PAN = { inertia: 250, dragPan: false }
+// Largest texture this device's GPU accepts (4096 on many phones).
+let maxTex = 0
+function maxTexture() {
+  if (!maxTex) {
+    try {
+      const c = document.createElement('canvas')
+      const gl = (c.getContext('webgl2') ?? c.getContext('webgl')) as WebGLRenderingContext | null
+      maxTex = gl ? gl.getParameter(gl.MAX_TEXTURE_SIZE) : 4096
+    } catch { maxTex = 4096 }
+  }
+  return maxTex
+}
 // Below this zoom nodes are a few pixels wide: every drag pans. Above it, dragging a node moves it.
 const NODE_DRAG_ZOOM = 3
 // Multiply: an ink-stamp logo takes the colour of the tile under it.
@@ -420,12 +432,15 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
     }
     return [c[0], c[1], c[2], 255]
   }
+  // Many phone GPUs can't load an 8192 px texture and draw black boxes: they get the half-size sheet.
+  const half = useMemo(() => maxTexture() < Math.max(world.sprite.width, world.sprite.height), [world])
+  const sheet = (file: string) => `/${half ? file.replace(/\.webp$/, '.half.webp') : file}`
   const mapping = useMemo(() => {
     const m: Record<string, { x: number; y: number; width: number; height: number }> = {}
-    const { cols, cell } = world.sprite
+    const { cols } = world.sprite, cell = half ? world.sprite.cell / 2 : world.sprite.cell
     world.logo.forEach((k, i) => { if (k >= 0) m[i] = { x: (k % cols) * cell, y: Math.floor(k / cols) * cell, width: cell, height: cell } })
     return m
-  }, [world])
+  }, [world, half])
 
   // One set of node layers; `which` picks the static nodes or the ones the physics is moving.
   const nodeLayers = (which: 'static' | 'live') => {
@@ -463,7 +478,7 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
       new IconLayer<number>({
         ...base, id: `logos-${which}`,
         data: !showLogos ? EMPTY : which === 'static' ? logoIds : liveLogoIds,
-        iconAtlas: `/${logoStyle === 'colour' ? world.sprite.url : world.sprite.ink}`,
+        iconAtlas: sheet(logoStyle === 'colour' ? world.sprite.url : world.sprite.ink),
         iconMapping: mapping,
         getIcon: (i) => String(i),
         getPosition: at,

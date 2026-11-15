@@ -26,6 +26,11 @@ export async function inkLogos() {
   // White paper behind each logo, then greyscale with lifted shadows so the tint stays readable.
   const flat = await sharp(src).flatten({ background: '#ffffff' }).greyscale().linear(0.85, 38).toBuffer()
   await sharp(flat).ensureAlpha().composite([{ input: mask, blend: 'dest-in' }]).webp({ quality: 88, alphaQuality: 100 }).toFile(path(`public/atlas-logos-ink.${hash}.webp`))
+  // Half-size copies for phones whose GPU can't load an 8192 px texture (common on Android).
+  for (const name of [`atlas-logos.${hash}`, `atlas-logos-ink.${hash}`]) {
+    const full = path(`public/${name}.webp`), m = await sharp(full).metadata()
+    await sharp(full).resize(Math.round(m.width / 2), Math.round(m.height / 2)).webp({ quality: 88, alphaQuality: 100 }).toFile(path(`public/${name}.half.webp`))
+  }
   meta.sprite.url = `atlas-logos.${hash}.webp`
   meta.sprite.ink = `atlas-logos-ink.${hash}.webp`
   writeFileSync(path('src/data/world.json'), JSON.stringify(meta))

@@ -274,7 +274,7 @@ html, body, #root { margin: 0; height: 100%; overflow: hidden; }
 @keyframes pop { 0% { transform: scale(.88); } 100% { transform: scale(1); } }
 
 /* ---------- Touch controls for the boat (phones and tablets only) ---------- */
-.pad { display: none; position: absolute; left: 16px; bottom: 88px; z-index: 6; align-items: flex-end; gap: 12px; flex-direction: row-reverse; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pad { display: none; position: absolute; right: 16px; bottom: 88px; z-index: 6; align-items: flex-end; gap: 12px; flex-direction: row; touch-action: none; user-select: none; -webkit-user-select: none; }
 @media (pointer: coarse) { .pad { display: flex; } }
 @media (pointer: coarse) and (min-width: 641px) { .pad { bottom: 72px; } }
 .pad-stick { position: relative; width: 112px; height: 112px; border-radius: 50%; background: rgba(243,234,216,.82); border: 2px solid var(--ink-2); box-shadow: 0 4px 14px rgba(43,29,16,.25); touch-action: none; }
