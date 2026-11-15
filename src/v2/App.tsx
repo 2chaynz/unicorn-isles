@@ -8,6 +8,7 @@ import { Intro } from './Intro'
 import { FavSheet } from './Favourites'
 import { useSession } from '../auth'
 import { useStored } from '../useStored'
+import { Pad } from './Pad'
 import './v2.css'
 
 type Mode = 'search' | 'ask'
@@ -152,6 +153,7 @@ function Explorer({ world }: { world: World }) {
   return (
     <div className="v2">
       <WorldMap world={world} lens={lens} colorBy="theme" sizeBy={sizeBy} favs={favSet} selected={selected} visible={visible} scores={scores} focusTheme={focusTheme} flySeq={flySeq} onPick={onMapPick} onTheme={onTheme} />
+      <Pad canSave={selected >= 0} />
 
       <header className="v2-top">
         <div className="brand glass">

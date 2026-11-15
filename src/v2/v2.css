@@ -272,3 +272,14 @@ html, body, #root { margin: 0; height: 100%; overflow: hidden; }
 .v2-sheet .actions button:active { transform: scale(.93); }
 .v2-sheet .actions button.done { background: #2f6b4a; animation: pop .35s cubic-bezier(.2,1.6,.4,1); }
 @keyframes pop { 0% { transform: scale(.88); } 100% { transform: scale(1); } }
+
+/* ---------- Touch controls for the boat (phones and tablets only) ---------- */
+.pad { display: none; position: absolute; left: 16px; bottom: 88px; z-index: 6; align-items: flex-end; gap: 12px; flex-direction: row-reverse; touch-action: none; user-select: none; -webkit-user-select: none; }
+@media (pointer: coarse) { .pad { display: flex; } }
+@media (pointer: coarse) and (min-width: 641px) { .pad { bottom: 72px; } }
+.pad-stick { position: relative; width: 112px; height: 112px; border-radius: 50%; background: rgba(243,234,216,.82); border: 2px solid var(--ink-2); box-shadow: 0 4px 14px rgba(43,29,16,.25); touch-action: none; }
+.pad-stick i { position: absolute; left: 34px; top: 34px; width: 44px; height: 44px; border-radius: 50%; background: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,.3); pointer-events: none; }
+.pad-actions { display: flex; flex-direction: column; gap: 10px; }
+.v2 .pad .pad-btn { min-width: 72px; padding: 12px 14px; border-radius: 12px; background: var(--ink); color: var(--paper) !important; font: 16px var(--serif); border: 0; box-shadow: 0 3px 10px rgba(43,29,16,.3); touch-action: manipulation; }
+.v2 .pad .pad-btn.save { background: #b3234f; }
+@media (max-width: 640px) { .v2 .v2-detail, .v2 .v2-detail.beside { left: 16px; right: 16px; width: auto; max-width: none; box-sizing: border-box; } }

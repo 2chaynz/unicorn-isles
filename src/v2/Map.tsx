@@ -643,7 +643,10 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
           const v = viewState as ViewState
           // Dragging or zooming the map yourself stops the camera from chasing the boat.
           if (interactionState?.isDragging || interactionState?.isZooming || interactionState?.isPanning) boat.current.follow = false
-          setView({ target: v.target, zoom: Math.min(7, Math.max(fit().zoom - 0.5, v.zoom)) })
+          const z = Math.min(7, Math.max(fit().zoom - 0.5, v.zoom))
+          // At a zoom limit the wheel would still slide the map toward the cursor: keep the centre where it is.
+          if (z !== v.zoom) setView((prev) => ({ target: prev.target, zoom: z }))
+          else setView({ target: v.target, zoom: z })
         }}
         layers={[waves, compass, splashes, creatures, ...nodeLayers('static'), ...nodeLayers('live'), selection, wake, boatLayer, hint, themeLabels, countryLabels]}
         getCursor={({ isHovering, isDragging }) => (dragging ? 'grabbing' : isDragging ? 'grabbing' : overNode && canDragNodes ? 'move' : isHovering ? 'pointer' : 'grab')}
