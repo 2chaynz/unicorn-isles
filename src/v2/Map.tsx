@@ -201,14 +201,16 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
   const [, setTick] = useState(0)
   const [dragging, setDragging] = useState(false)
   const [overNode, setOverNode] = useState(false)
-  // Holding Space always pans, whatever is under the pointer.
-  const [spaceHeld, setSpaceHeld] = useState(false)
+  // Dragging always pans the map (dense areas are all dots); holding Shift drags a dot instead.
+  const [shiftHeld, setShiftHeld] = useState(false)
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { if (e.code === 'Space' && !(e.target instanceof HTMLInputElement)) { e.preventDefault(); setSpaceHeld(true) } }
-    const up = (e: KeyboardEvent) => { if (e.code === 'Space') setSpaceHeld(false) }
+    const down = (e: KeyboardEvent) => { if (e.key === 'Shift') setShiftHeld(true) }
+    const up = (e: KeyboardEvent) => { if (e.key === 'Shift') setShiftHeld(false) }
+    const clear = () => setShiftHeld(false)
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up) }
+    window.addEventListener('blur', clear)
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clear) }
   }, [])
   const near = (cx: number, cy: number, R: number) => {
     const out: number[] = []
@@ -391,7 +393,7 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
   const live = useMemo(() => [...active], [active])
   const liveLogoIds = useMemo(() => live.filter((i) => world.logo[i] >= 0), [live, world])
   const liveLetterIds = useMemo(() => live.filter((i) => world.logo[i] < 0), [live, world])
-  const canDragNodes = view.zoom >= NODE_DRAG_ZOOM && !spaceHeld
+  const canDragNodes = view.zoom >= NODE_DRAG_ZOOM && shiftHeld
   // Nodes in the simulation are drawn by the live layers; the big static layers hide them.
   const still = (i: number) => !active.has(i)
   const triggers = [sizeBy, visible, lens, focusTheme, showLogos, active]

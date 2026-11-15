@@ -167,7 +167,7 @@ function Explorer({ world }: { world: World }) {
       </header>
       <button className="help glass" title="Meet Eino again" onClick={() => setIntro(true)}>?</button>
       {intro && <Intro onClose={() => setIntro(false)} />}
-      <p className="drag-hint">WASD to sail · E opens the nearest startup · drag a dot to push it · hold Space to drag the map over dots</p>
+      <p className="drag-hint">Drag to move the map · WASD to sail · E opens the nearest startup · Shift-drag a dot to push it</p>
 
       <section className="v2-search glass">
         <form onSubmit={(e) => { e.preventDefault(); run(query) }}>
