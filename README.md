@@ -1,50 +1,52 @@
-# Cala map (side project)
+# Unicorn Isles
 
-Challenge: Cala "Make Unicorns Real". Startup explorer modelled on zig-zag.fm: sectors are islands, startups are tiles, investors navigate. Full UI inventory: `FEATURES.md`.
+A pixel-art sea chart of 5,736 young startups. Sail it with WASD, ask it questions, leave with a shortlist. Built on Cala's knowledge graph.
+
+- Live demo: https://unicorn-isles.onrender.com (free hosting: the first visit can take up to a minute to wake up)
+- Challenge: Cala, "Make Unicorns Real", Junction 2026
+- Built during Junction 2026 in Espoo, 13–15 November 2026.
+
+## What it does
+- **Europe view**: every country drawn in its real shape, made of its own startups (37 countries, 3,086 startups). Dot size is valuation.
+- **Meaning view**: the same dots move next to the companies most like them (t-SNE over description embeddings, 22 themes).
+- **Search**: describe a company in plain words; matches light up on the map.
+- **Ask**: a full question goes to Cala's knowledge search (answer with sources); Gemma picks the matching startups.
+- **Startup card**: backers, closest competitors, stage, valuation, and where each fact came from.
+- **Shortlist**: filter by stage, sector, funding or unicorn; save with F, export CSV, or sign in by email link to sync across devices.
+- Sailing: WASD moves the boat, E opens the nearest startup, F saves it. Eino and the sea creatures are there for fun.
 
 ## Run
+Node 20+.
 ```
 npm install
-npm run dev
+cp .env.example .env      # fill in the keys below
+npm run dev               # http://localhost:5180
 ```
+Production: `npm run build && npx vite preview --host 0.0.0.0 --port $PORT` (the `Dockerfile` does this). `vite preview` also serves the `/api` routes.
 
-## Stack
-- Vite + React + TypeScript, deck.gl (same renderer as zig-zag).
-- Layout: one island per sector, each with its own random silhouette (lobes, stretch, Perlin coast), packed at random bearings (`src/perlin.ts`, `src/layout.ts`). Every land tile is a startup. Inside an island, similar startups are neighbours (`src/data/positions.json`).
-- Data: Cala API (`/v1/knowledge/query`, `/v1/entities`), cached in `.cache/`. Mock data only if `src/data/startups.json` is missing.
+### Environment
+| Name | Used for |
+|---|---|
+| `CALA_API_KEY` | Cala API: data import, Ask answers, funding rounds. Header `X-API-KEY` |
+| `GEMINI_API_KEY` | Gemma (via the Gemini API): Ask picks and data gap filling. Server side only |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Optional. Email-link sign-in and synced shortlists. Without them saves stay in the browser |
 
-## Ask (Gemini)
-- Box at the top of the map: plain-language questions, e.g. "a startup doing food and AI".
-- `POST /api/ask` runs inside the Vite server (`server/ask.mjs`), so `GEMINI_API_KEY` never reaches the browser. Works in `npm run dev` and `npm run preview`; a static deploy needs its own function.
-- Flow: query embedding vs `.cache/embeddings.json` → top 30 → Gemini picks up to 8 and says why → picks light up on the map.
-- In parallel, Cala answers live (`POST /v1/knowledge/search`, needs `CALA_API_KEY` with credits): sourced prose, its sources, and the startups it names light up if they are on the map. If Cala fails (e.g. no credits), the card says why and the map answer still shows.
-- Cala MCP for Claude Code while building: `claude mcp add -s local --transport http cala https://api.cala.ai/mcp/ --header "X-API-KEY: <key>"`.
+Supabase setup: run `supabase/schema.sql`, then under Authentication > URL Configuration set the Site URL and add your app's URL to the redirect list.
 
-## Land necks
-- `scripts/embed.mjs` flags startups whose embedding sits almost as close to another sector's centroid as to their own (`src/data/bridges.json`, up to 8 per island pair).
-- Linked islands are placed side by side and joined by a strip of land; those startups live on it, each on its own sector's side, colour blending across.
+## How it's built
+- Vite, React, TypeScript, deck.gl. Pixel sprites are drawn in code (`src/v2/sprites.ts`).
+- Server routes run inside Vite (`server/semantic.mjs`, `server/ask.mjs`), so API keys never reach the browser.
+- Search embeddings (bge-small) run locally with transformers.js.
 
-## Data pipeline
+### Data pipeline
 ```
-node scripts/import-cala.mjs        # Cala entity graph: our startups + Slush 2026 attendees, with funding fields
-node scripts/summarize.mjs         # Gemini web-grounded summary per startup (GEMINI_API_KEY), resumable
-node scripts/embed.mjs              # Gemini embeddings -> sectors for new companies, positions, land necks
-node scripts/layout.mjs             # precomputed island layout (embed.mjs runs it); the page computes it itself if stale
+node scripts/import-world.mjs       # companies, funding and investors from Cala's entity graph (cached in .cache/)
+node scripts/import-valuations.mjs  # latest valuations from Cala's knowledge query
+node scripts/enrich-gemma.mjs       # fill gaps with Gemma; anything it fills is flagged as model-made
+node scripts/atlas.mjs              # embeddings, meaning map, themes, logo sprite sheet
+node scripts/relayout-world.mjs     # Europe map: country shapes from Natural Earth outlines
 ```
-- `import-cala.mjs` caches every Cala response in `.cache/`. When credits run out it builds from the cache and says how many companies are left; rerun after topping up.
-- Each fact keeps its strongest source (registry > company > press > database) and date; the panel shows them.
-- Round amounts and lead investors are fetched live when a startup is opened (`POST /api/rounds`), cached in `.cache/cala-rounds/`.
-- Optional stack: Context.dev / Exa for live news per startup.
+Kept: companies founded in 2020 or later. Dropped: acquired, listed and name-only records.
 
-## Config
-- Saving and sign-in (optional): saved startups live in the browser; with Supabase they follow the user across devices. Sign-in is one step: type your email and click the link we send, no password. Setup:
-  1. Create a Supabase project and run `supabase/schema.sql` in its SQL editor.
-  2. Authentication > URL Configuration: set Site URL to where the app runs (http://localhost:5180 in dev).
-  3. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (the publishable key) in `.env` (see `.env.example`).
-  The default Supabase email sender is rate limited (a few emails an hour); add custom SMTP for real use. A 6-digit code instead of a link needs custom SMTP too, to edit the email template.
-  Without them the app runs as guest, saved on this device only.
-- `.env` (gitignored): `CALA_API_KEY`, sent as header `X-API-KEY`. Key from https://console.cala.ai/api-keys.
-- `GEMINI_API_KEY` in `.env` for `scripts/summarize.mjs`. Never shipped to the browser: summaries are baked into `src/data/summaries.json`.
-
-## Todo from humans
-- [ ] Own branding (name, logo, palette). Copy layout and interactions, not zig-zag's logo or assets.
+## Licence
+MIT, see `LICENSE`. Data comes from Cala and is subject to Cala's terms.
