@@ -15,9 +15,11 @@ const FLY = {
 }
 const MORPH = { duration: 1400, easing: (k: number) => (k < 0.5 ? 4 * k ** 3 : 1 - (-2 * k + 2) ** 3 / 2) }
 const VIEW = new OrthographicView({ flipY: true })
-const CONTROLLER = { inertia: 250 }
+// deck.gl's own keyboard control is off: it would pan the map on the arrow keys while the boat sails on them too,
+// and its pan stops the camera from following the boat. The boat owns the arrows; + and - zoom (handled below).
+const CONTROLLER = { inertia: 250, keyboard: false }
 // Over a node, a drag moves the node instead of the map.
-const NO_PAN = { inertia: 250, dragPan: false }
+const NO_PAN = { inertia: 250, dragPan: false, keyboard: false }
 // Largest texture this device's GPU accepts (4096 on many phones).
 let maxTex = 0
 function maxTexture() {
@@ -334,8 +336,8 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
 
   // ---------- the boat: WASD or arrows to sail, E opens the nearest startup ----------
   const [nearest, setNearest] = useState(-1)
-  const latest = useRef({ zoom: 3, onPick, nearest: -1, near, addToSim, side: () => 1, setView })
-  latest.current = { zoom: view.zoom, onPick, nearest, near, addToSim, side: () => 1, setView }
+  const latest = useRef({ zoom: 3, onPick, nearest: -1, near, addToSim, side: () => 1, setView, minZoom: 0 })
+  latest.current = { zoom: view.zoom, onPick, nearest, near, addToSim, side: () => 1, setView, minZoom: fit().zoom - 0.5 }
   useEffect(() => {
     const dirs: Record<string, string> = { KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r' }
     const typing = (e: KeyboardEvent) => e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement
@@ -343,6 +345,13 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
       if (typing(e) || e.metaKey || e.ctrlKey || e.altKey) return
       if (dirs[e.code]) { e.preventDefault(); keys.current.add(dirs[e.code]) }
       if (e.code === 'KeyE' && latest.current.nearest >= 0) latest.current.onPick(latest.current.nearest)
+      // + and - zoom around the current centre, within the same limits as the wheel.
+      const dz = e.key === '+' || e.key === '=' ? 0.5 : e.key === '-' || e.key === '_' ? -0.5 : 0
+      if (dz) {
+        e.preventDefault()
+        const min = latest.current.minZoom
+        latest.current.setView((v) => ({ target: v.target, zoom: Math.min(7, Math.max(min, v.zoom + dz)) }))
+      }
     }
     const up = (e: KeyboardEvent) => { if (dirs[e.code]) keys.current.delete(dirs[e.code]) }
     const clear = () => keys.current.clear()
