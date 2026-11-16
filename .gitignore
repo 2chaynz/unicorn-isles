@@ -28,3 +28,7 @@ dist-ssr
 
 # Search models downloaded by the server on first run
 /.cache/models/
+
+# Cloudflare: local secrets for `wrangler pages dev`, and wrangler state
+.dev.vars
+.wrangler/

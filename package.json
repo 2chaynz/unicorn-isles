@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:cf": "npm run build && node scripts/cf-data.mjs",
+    "cf:dev": "npm run build:cf && wrangler pages dev",
+    "cf:deploy": "npm run build:cf && wrangler pages deploy"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.5.2",
@@ -31,6 +34,7 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5",
-    "world-atlas": "^2.0.2"
+    "world-atlas": "^2.0.2",
+    "wrangler": "^4.163.0"
   }
 }

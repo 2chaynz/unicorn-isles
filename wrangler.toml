@@ -1,0 +1,8 @@
+# Cloudflare Pages: `npm run cf:deploy` builds the site and uploads it with the functions in functions/.
+name = "unicorn-isles"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-11-01"
+
+# Workers AI: the search embeddings (bge-small-en-v1.5, the model the map's vectors were made with).
+[ai]
+binding = "AI"
