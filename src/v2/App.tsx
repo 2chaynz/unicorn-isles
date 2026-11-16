@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { WorldMap } from './Map'
 import { Detail, ThemeSheet } from './Panels'
 import { LENSES, MATURITY, isUnicorn, loadWorld, type Lens, type SizeBy, type World } from './world'
-import { askCala, askGemma, plain, searchMeaning, type CalaAnswer, type GemmaAnswer, type Hit } from './api'
+import { OFFLINE, askCala, askGemma, plain, searchMeaning, type CalaAnswer, type GemmaAnswer, type Hit } from './api'
 import { LogoImg } from './Logo'
 import { Intro } from './Intro'
 import { FavSheet } from './Favourites'
@@ -42,6 +42,7 @@ function Explorer({ world }: { world: World }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [gemma, setGemma] = useState<GemmaAnswer | null>(null)
+  const [gemmaOff, setGemmaOff] = useState(false)
   const [cala, setCala] = useState<CalaAnswer | 'pending' | null>(null)
   const [focusTheme, setFocusTheme] = useState<number | null>(null)
   const [filters, setFilters] = useState<Filters>(NONE)
@@ -101,13 +102,13 @@ function Explorer({ world }: { world: World }) {
 
   function clear() {
     asked.current++
-    setHits(null); setGemma(null); setCala(null); setError(''); setBusy(false); setHitsLabel('')
+    setHits(null); setGemma(null); setGemmaOff(false); setCala(null); setError(''); setBusy(false); setHitsLabel('')
   }
 
   async function run(q: string, m: Mode = mode) {
     if (!q.trim()) return
     const n = ++asked.current
-    setQuery(q); setBusy(true); setError(''); setGemma(null); setResultsOpen(true)
+    setQuery(q); setBusy(true); setError(''); setGemma(null); setGemmaOff(false); setResultsOpen(true)
     try {
       if (m === 'ask') {
         setCala('pending')
@@ -116,8 +117,9 @@ function Explorer({ world }: { world: World }) {
         const h = await searchMeaning(q)
         if (n !== asked.current) return
         setHits(h.slice(0, 24)); setHitsLabel(q)
-        const g = await askGemma(q)
+        const g = await askGemma(q).catch(() => null)
         if (n !== asked.current) return
+        if (!g) { setGemmaOff(true); return }
         setGemma(g)
         const picked = new Set(g.picks.map((p) => p.id))
         setHits([...g.picks.map((p) => ({ id: p.id, score: 1 })), ...h.slice(0, 24).filter((x) => !picked.has(x.id)).map((x) => ({ ...x, score: x.score * 0.8 }))])
@@ -192,6 +194,7 @@ function Explorer({ world }: { world: World }) {
             )}
             {busy && <p className="muted"><span className="dot pulse" /> {mode === 'ask' ? 'Gemma is reading the shortlist…' : 'Searching…'}</p>}
             {error && <p className="error">{error}</p>}
+            {gemmaOff && <div className="answer"><div className="label">Gemma</div><p className="muted">{OFFLINE}</p></div>}
             {gemma && (
               <div className="answer">
                 <div className="label">Gemma · from {hits?.length ?? 0} closest startups</div>
@@ -213,7 +216,7 @@ function Explorer({ world }: { world: World }) {
               <div className="answer cala">
                 <div className="label"><span className={`dot ${cala === 'pending' ? 'pulse' : ''}`} /> Cala knowledge graph</div>
                 {cala === 'pending' ? <p className="muted">Researching live, this can take a minute…</p>
-                  : cala.error ? <p className="muted">Unavailable: {cala.error}</p>
+                  : cala.error ? <p className="muted">{OFFLINE}</p>
                     : <CalaText a={cala} onPick={pickId} world={world} />}
               </div>
             )}

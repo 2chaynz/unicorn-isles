@@ -31,6 +31,8 @@ export const searchLogos = (body: { q?: string; image?: string; id?: string }) =
 export const getStartup = (id: string) => post<Full>('/api/startup', { id })
 export const getLight = (ids: string[]) => post<Light[]>('/api/startup', { ids })
 export const getRounds = (id: string) => post<{ rounds?: Round[]; error?: string }>('/api/rounds', { id })
+// Live Gemma and Cala ran during the hackathon; the public site shows this when they are not reachable.
+export const OFFLINE = 'Hackathon only :('
 export const askGemma = (question: string) => post<GemmaAnswer>('/api/ask-gemma', { question })
 export const askCala = (question: string) => post<CalaAnswer>('/api/cala', { question }).catch((e) => ({ error: String(e.message ?? e) }))
 

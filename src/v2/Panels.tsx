@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { LogoImg } from './Logo'
 import { MATURITY, VALUE_SRC, isUnicorn, money, type World } from './world'
-import { askCala, getLight, getRounds, getStartup, host, moneyOf, plain, shortDate, similar, toEur, type CalaAnswer, type Full, type Hit, type Light, type Round } from './api'
+import { OFFLINE, askCala, getLight, getRounds, getStartup, host, moneyOf, plain, shortDate, similar, toEur, type CalaAnswer, type Full, type Hit, type Light, type Round } from './api'
 
 const RANK: Record<string, string> = { FILING: 'registry', PRIMARY: 'company', PRESS: 'press', AGGREGATOR: 'database' }
 const STAGE: Record<string, string> = { PRE_SEED: 'Pre-seed', SEED: 'Seed', SERIES_A: 'Series A', SERIES_B: 'Series B' }
@@ -204,7 +204,7 @@ function Market({ world, t, visible, onBack, onPick, onClose }: { world: World; 
         <div className="label"><span className={`dot ${cala === 'pending' ? 'pulse' : ''}`} /> Cala, live research</div>
         {!cala && <button className="primary" onClick={() => { setCala('pending'); askCala(question).then(setCala) }}>Who raised money here lately?</button>}
         {cala === 'pending' && <p className="muted">Researching, up to a minute…</p>}
-        {cala && cala !== 'pending' && (cala.error ? <p className="muted">Unavailable: {cala.error}</p> : (
+        {cala && cala !== 'pending' && (cala.error ? <p className="muted">{OFFLINE}</p> : (
           <>
             <p className="clamp-long">{plain(cala.answer ?? '')}</p>
             {(cala.sources ?? []).length > 0 && <p className="sources">{cala.sources!.slice(0, 5).map((s) => <a key={s.url} href={s.url} target="_blank" rel="noreferrer">{host(s.url)}</a>)}</p>}

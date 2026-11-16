@@ -98,7 +98,7 @@ export function AskBox({ current, onAnswer, onPick }: { current: string; onAnswe
       {open && !folded && (
         <div className="ask-body">
           
-          {error && <p className="ask-error">{error}</p>}
+          {error && <p className="muted">Hackathon only :(</p>}
           {!busy && !result && !error && (
             <div className="chips">
               {EXAMPLES.map((q) => <button key={q} className="tag" onClick={() => submit(q)}>{q}</button>)}
@@ -110,7 +110,7 @@ export function AskBox({ current, onAnswer, onPick }: { current: string; onAnswe
               {cala === 'pending'
                 ? <p className="muted">Cala is researching its graph, this can take up to a minute…</p>
                 : cala.error
-                  ? <p className="muted">Live answer unavailable ({cala.error})</p>
+                  ? <p className="muted">Hackathon only :(</p>
                   : (
                     <>
                       <p className={`ask-answer ${calaOpen ? '' : 'clamped'}`} onClick={() => setCalaOpen(!calaOpen)} title={calaOpen ? '' : 'Show the full answer'}>{plain(cala.answer ?? '')}</p>
