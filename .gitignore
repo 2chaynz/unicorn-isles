@@ -32,3 +32,6 @@ dist-ssr
 # Cloudflare: local secrets for `wrangler pages dev`, and wrangler state
 .dev.vars
 .wrangler/
+
+# Local secrets: never commit
+.env
