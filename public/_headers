@@ -1,0 +1,7 @@
+# Cloudflare Pages response headers.
+# Built files and logo sheets carry a content hash in their name, so a new version gets a new URL:
+# browsers can keep them for a year without asking again.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/atlas-logos*
+  Cache-Control: public, max-age=31536000, immutable
