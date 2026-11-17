@@ -22,6 +22,7 @@ const CONTROLLER = { inertia: 250, keyboard: false }
 const NO_PAN = { inertia: 250, dragPan: false, keyboard: false }
 // Below this zoom nodes are a few pixels wide: every drag pans. Above it, dragging a node moves it.
 const NODE_DRAG_ZOOM = 3
+const MAX_ZOOM = 7
 // Multiply: an ink-stamp logo takes the colour of the tile under it.
 const MULTIPLY = { blend: true, blendColorOperation: 'add', blendColorSrcFactor: 'dst-color', blendColorDstFactor: 'zero', blendAlphaSrcFactor: 'one', blendAlphaDstFactor: 'one-minus-src-alpha' } as const
 // Pixel art stays crisp; logos are smoothed so they read cleanly at any zoom.
@@ -344,7 +345,7 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
       if (dz) {
         e.preventDefault()
         const min = latest.current.minZoom
-        latest.current.setView((v) => ({ target: v.target, zoom: Math.min(7, Math.max(min, v.zoom + dz)) }))
+        latest.current.setView((v) => ({ target: v.target, zoom: Math.min(MAX_ZOOM, Math.max(min, v.zoom + dz)) }))
       }
     }
     const up = (e: KeyboardEvent) => { if (dirs[e.code]) keys.current.delete(dirs[e.code]) }
@@ -657,16 +658,14 @@ export const WorldMap = memo(function WorldMap({ world, lens, colorBy, sizeBy, f
     <div ref={box} className="v2-map">
       <DeckGL
         views={VIEW}
-        viewState={view}
+        // The controller clamps zoom itself, so a pinch at a limit still pans and a wheel at a limit does not slide.
+        viewState={{ ...view, minZoom: fit().zoom - 0.5, maxZoom: MAX_ZOOM }}
         controller={(overNode && canDragNodes) || dragging ? NO_PAN : CONTROLLER}
         onViewStateChange={({ viewState, interactionState }) => {
           const v = viewState as ViewState
           // Dragging or zooming the map yourself stops the camera from chasing the boat.
           if (interactionState?.isDragging || interactionState?.isZooming || interactionState?.isPanning) boat.current.follow = false
-          const z = Math.min(7, Math.max(fit().zoom - 0.5, v.zoom))
-          // At a zoom limit the wheel would still slide the map toward the cursor: keep the centre where it is.
-          if (z !== v.zoom) setView((prev) => ({ target: prev.target, zoom: z }))
-          else setView({ target: v.target, zoom: z })
+          setView({ target: v.target, zoom: Math.min(MAX_ZOOM, Math.max(fit().zoom - 0.5, v.zoom)) })
         }}
         layers={[waves, compass, splashes, creatures, ...nodeLayers('static'), ...nodeLayers('live'), selection, wake, boatLayer, hint, themeLabels, countryLabels]}
         getCursor={({ isHovering, isDragging }) => (dragging ? 'grabbing' : isDragging ? 'grabbing' : overNode && canDragNodes ? 'move' : isHovering ? 'pointer' : 'grab')}
